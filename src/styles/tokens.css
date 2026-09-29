@@ -1,0 +1,77 @@
+/*
+ * DESIGN TOKENS — Available City Chops and Grill
+ * Brand: red, yellow/gold, black and white (from the logo and flyers).
+ *   Black  → strong sections (hero, footer, product tiles)
+ *   Gold   → highlights and prices on dark backgrounds
+ *   Red    → primary calls to action
+ *   White  → readable content
+ */
+:root {
+  /* Surfaces */
+  --c-bg: #fffaf0;
+  --c-bg-2: #f7eedb;
+  --c-surface: #ffffff;
+  --c-line: #ece0c8;
+  --c-line-strong: #dac8a4;
+
+  /* Dark (black) sections */
+  --c-dark: #120d0b;
+  --c-dark-2: #1f1511;
+  --c-dark-line: rgb(255 255 255 / 0.12);
+  --c-on-dark: #fffaf0;
+  --c-on-dark-2: rgb(255 250 240 / 0.72);
+
+  /* Text */
+  --c-ink: #16100d;
+  --c-ink-2: #574a3f;
+  --c-ink-3: #6e5f52;
+
+  /* Brand */
+  --c-brand: #d0142c; /* red — CTAs */
+  --c-brand-strong: #a80f23;
+  --c-brand-soft: #fde8eb;
+  --c-accent: #f7b500; /* gold — highlights */
+  --c-accent-strong: #d99e00;
+  --c-accent-soft: #fff4cf;
+  --c-focus: rgb(208 20 44 / 0.18);
+
+  /* Status */
+  --c-wa: #15803d;
+  --c-wa-strong: #116932;
+  --c-danger: #b42318;
+  --c-danger-soft: #fdecea;
+  --c-success: #15803d;
+
+  /* Type */
+  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Shape & depth */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --shadow-sm: 0 1px 2px rgb(22 16 13 / 0.06), 0 1px 1px rgb(22 16 13 / 0.04);
+  --shadow-md: 0 6px 20px -6px rgb(22 16 13 / 0.2), 0 2px 6px -2px rgb(22 16 13 / 0.08);
+  --shadow-lg: 0 24px 60px -20px rgb(22 16 13 / 0.4);
+
+  /* Layout */
+  --header-h: 64px;
+  --gutter: 16px;
+  --container: 1200px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur: 280ms;
+
+  color-scheme: light;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 24px;
+    --header-h: 72px;
+  }
+}
