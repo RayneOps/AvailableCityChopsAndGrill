@@ -8,7 +8,6 @@ export const categories: Category[] = [
   {
     id: "packs",
     name: "Small Chops Packs",
-    notes: ["Minimum of 10 packs."],
     flyer: "small-chops-packs",
   },
   {

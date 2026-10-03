@@ -14,9 +14,9 @@ describe("real menu matches the flyers", () => {
     expect(products).toHaveLength(13);
   });
 
-  it("Small Chops Packs: 7 packs, correct prices and contents, minimum 10, event-eligible", () => {
+  it("Small Chops Packs: 7 packs, correct prices and contents, no minimum, event-eligible", () => {
     expect(packs.map((p) => p.price)).toEqual([2000, 2500, 3000, 3200, 3500, 4000, 4700]);
-    expect(packs.every((p) => p.minQuantity === 10 && p.supportsEventOrder === true)).toBe(true);
+    expect(packs.every((p) => (p.minQuantity ?? 1) === 1 && p.supportsEventOrder === true)).toBe(true);
     const contents = Object.fromEntries(packs.map((p) => [p.price, p.contents]));
     expect(contents[2000]).toEqual(["Spring Roll", "Samosa", "Corndog", "Puff Puff"]);
     expect(contents[3200]).toEqual(["Spring Roll", "Samosa", "Gizzard", "Chicken BBQ", "Mosa", "Puff Puff", "Corndog"]);

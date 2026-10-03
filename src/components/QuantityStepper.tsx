@@ -10,7 +10,7 @@ type Props = {
   min?: number;
   /**
    * At this value the minus button becomes a bin that removes the item
-   * (e.g. 10 for packs with a 10-pack minimum, 1 for everything else).
+   * (1 unless the product sets `minQuantity`).
    */
   removeAt?: number;
   size?: "sm" | "md";

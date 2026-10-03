@@ -11,8 +11,8 @@ public/images/
 │   ├── favicon.png
 │   └── og-image.png
 ├── products/           what customers order
-│   ├── packs/          the seven Small Chops Pack photos
-│   └── trays/          the six For the Tray photos
+│   ├── packs/          the seven Small Chops Pack photos (+ shared pack.jpg)
+│   └── trays/          the six For the Tray photos (+ shared tray.jpg)
 ├── flyers/             the original menu / price-list flyers
 │   ├── small-chops-packs.jpg
 │   └── for-the-tray.jpg
@@ -60,6 +60,8 @@ Keep the four kinds separate: a product photo goes in `products/`, a flyer in
 | Tray Package — ₦50,000      | `trays/tray-50000.jpg`   |
 
 - The number in the filename is the price, so each photo matches its product.
+- **Shared photo:** `packs/pack.jpg` is shown on every pack and `trays/tray.jpg`
+  on every tray until that product has its own photo (e.g. `pack-2000.jpg`).
 - `.jpg`, `.jpeg`, `.png` and `.webp` all work.
 - Recommended: square, about 800×800, under 150 KB.
 - **To replace a photo:** overwrite the file, keeping the same name.

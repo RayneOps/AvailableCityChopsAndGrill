@@ -9,17 +9,25 @@ import type { Product, ProductImage } from "../types";
  * and "Small Chops Menu — FOR THE TRAY — Price List Package".
  * Do not add items, prices or contents that are not on the flyers.
  *
- * Prices are whole naira.
+ * Prices are whole naira. Packs can be ordered from 1 pack (the business
+ * dropped the flyer's 10-pack minimum).
  *
  * Photos: /public/images/products/packs/pack-<price>.jpg and
  * /public/images/products/trays/tray-<price>.jpg (.jpeg/.png/.webp also work),
  * e.g. packs/pack-2000.jpg or trays/tray-15000.jpg. They are picked up
- * automatically. Products without a photo show a branded price tile instead.
+ * automatically. Until a product has its own photo, the shared
+ * packs/pack.jpg or trays/tray.jpg is used; with neither, a branded price
+ * tile is shown instead.
  */
 
-/** Photo at /public/images/products/<base>.<ext> (e.g. "packs/pack-2000"), when one exists. */
-function findImage(base: string, price: number, label: string): ProductImage | undefined {
-  const file = productImages.find((f) => f.replace(/\.[^.]+$/, "").toLowerCase() === base);
+const imageFile = (base: string) => productImages.find((f) => f.replace(/\.[^.]+$/, "").toLowerCase() === base);
+
+/**
+ * Photo at /public/images/products/<folder>/<name>-<price>.<ext> (e.g. "packs/pack-2000"),
+ * falling back to the category's shared photo (e.g. "packs/pack").
+ */
+function findImage(folder: string, name: string, price: number, label: string): ProductImage | undefined {
+  const file = imageFile(`${folder}/${name}-${price}`) ?? imageFile(`${folder}/${name}`);
   if (!file) return undefined;
   const src = `/images/products/${file.split("/").map(encodeURIComponent).join("/")}`;
   return { src, alt: `${label} — ₦${price.toLocaleString("en-US")}` };
@@ -39,10 +47,8 @@ function pack(price: number, contents: string[]): Product {
     category: "packs",
     available: true,
     supportsEventOrder: true,
-    minQuantity: 10,
     unit: PACK,
-    badge: "Min. 10 packs",
-    image: findImage(`packs/pack-${price}`, price, "Small Chops Pack"),
+    image: findImage("packs", "pack", price, "Small Chops Pack"),
   };
 }
 
@@ -57,12 +63,12 @@ function tray(price: number, contents: string[]): Product {
     category: "trays",
     available: true,
     unit: TRAY,
-    image: findImage(`trays/tray-${price}`, price, "For the Tray package"),
+    image: findImage("trays", "tray", price, "For the Tray package"),
   };
 }
 
 export const products: Product[] = [
-  /* ---------- SMALL CHOPS PACKS (MINIMUM OF 10 PACKS) ---------- */
+  /* ---------- SMALL CHOPS PACKS ---------- */
   pack(2000, ["Spring Roll", "Samosa", "Corndog", "Puff Puff"]),
   pack(2500, ["Spring Roll", "Samosa", "Chicken BBQ", "Mosa", "Puff Puff"]),
   pack(3000, ["Spring Roll", "Samosa", "Corndog", "Chicken BBQ", "Mosa", "Puff Puff"]),

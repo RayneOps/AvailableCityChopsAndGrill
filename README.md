@@ -49,8 +49,9 @@ The menu comes from the two business flyers. Don't add items, prices or options 
 
 ## Business rules built in
 
-- **Small Chops Packs:** minimum of 10 packs. Quantity starts at 10 and can't go below 10.
-  The cart and WhatsApp message show "₦2,000/pack × 10 packs".
+- **Small Chops Packs:** no minimum. Quantity starts at 1 pack.
+  The cart and WhatsApp message show e.g. "₦2,000/pack × 3 packs".
+  (A per-product minimum can still be set with `minQuantity` in `src/data/products.ts`.)
 - **Event orders:** only Packs show "Ordering for an event?". Event details apply to the whole
   order. The order date/time is the event date/time, and the delivery address is the venue.
 - **For the Tray:** normal ordering. The flyer notes (packaging ₦200 – ₦1,500, bulk discount)
