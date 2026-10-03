@@ -34,7 +34,7 @@ export function SentStep() {
     <>
       <div className="opanel__body sent">
         <div className="sent__hero">
-          <Logo size={48} className="sent__logo" />
+          <Logo size={88} className="sent__logo" />
           <span className="sent__badge" aria-hidden="true">
             <IconCheck size={34} />
           </span>

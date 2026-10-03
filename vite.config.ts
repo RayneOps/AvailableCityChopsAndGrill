@@ -5,7 +5,6 @@ import react from "@vitejs/plugin-react";
 /** Production domain. Override with SITE_URL=… for previews/staging. */
 const SITE_URL = (process.env.SITE_URL ?? "https://availablecitychopsandgrill.com").replace(/\/+$/, "");
 const IMAGE_RE = /\.(jpe?g|png|webp|avif|gif|svg)$/i;
-const LOGO_NAME = "available-city-chops-and-grill-logo";
 
 function listImages(dir: string): string[] {
   if (!existsSync(dir)) return [];
@@ -14,10 +13,17 @@ function listImages(dir: string): string[] {
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
 }
 
-function findLogo(): string | null {
-  const files = listImages("public/images/logo");
-  const preferred = files.find((f) => f.toLowerCase().startsWith(LOGO_NAME)) ?? files[0];
-  return preferred ? `/images/logo/${preferred}` : null;
+/** Public path of /public/images/brand/<name>.<any image ext>, or null if it isn't there. */
+function findBrandAsset(name: string): string | null {
+  const file = listImages("public/images/brand").find((f) => f.replace(/\.[^.]+$/, "").toLowerCase() === name);
+  return file ? `/images/brand/${file}` : null;
+}
+
+const findLogo = () => findBrandAsset("logo");
+
+/** Product photos as paths relative to /public/images/products, e.g. "packs/pack-2000.jpg". */
+function listProductImages(): string[] {
+  return ["packs", "trays"].flatMap((dir) => listImages(`public/images/products/${dir}`).map((f) => `${dir}/${f}`));
 }
 
 /**
@@ -34,7 +40,7 @@ function siteAssetsPlugin(): Plugin {
       if (source !== resolved) return;
       return [
         `export const logo = ${JSON.stringify(findLogo())};`,
-        `export const productImages = ${JSON.stringify(listImages("public/images/products"))};`,
+        `export const productImages = ${JSON.stringify(listProductImages())};`,
         `export const flyerImages = ${JSON.stringify(listImages("public/images/flyers"))};`,
         `export const galleryImages = ${JSON.stringify(listImages("public/images/gallery"))};`,
       ].join("\n");
@@ -54,7 +60,7 @@ function siteAssetsPlugin(): Plugin {
   };
 }
 
-/** Canonical/OG URLs, favicon from the logo, robots.txt and sitemap.xml. */
+/** Canonical/OG URLs, favicon and share image from /public/images/brand, robots.txt and sitemap.xml. */
 function seoPlugin(): Plugin {
   return {
     name: "seo",
@@ -64,16 +70,16 @@ function seoPlugin(): Plugin {
         `<link rel="canonical" href="${SITE_URL}/" />`,
         `<meta property="og:url" content="${SITE_URL}/" />`,
       ];
-      const og = listImages("public/images/brand").find((f) => f.toLowerCase().startsWith("og-image"));
-      const shareImage = og ? `/images/brand/${og}` : logo;
+      const shareImage = findBrandAsset("og-image") ?? logo;
+      const favicon = findBrandAsset("favicon") ?? logo;
       if (shareImage) {
         tags.push(
           `<meta property="og:image" content="${SITE_URL}${shareImage}" />`,
           `<meta name="twitter:image" content="${SITE_URL}${shareImage}" />`,
         );
       }
-      if (logo) {
-        tags.push(`<link rel="icon" href="${logo}" />`, `<link rel="apple-touch-icon" href="${logo}" />`);
+      if (favicon) {
+        tags.push(`<link rel="icon" href="${favicon}" />`, `<link rel="apple-touch-icon" href="${favicon}" />`);
       } else {
         tags.push(`<link rel="icon" href="/favicon.svg" type="image/svg+xml" />`);
       }

@@ -11,11 +11,19 @@ import type { Product, ProductImage } from "../types";
  *
  * Prices are whole naira.
  *
- * Photos: save a photo as /public/images/products/<product id>.jpg
- * (or .jpeg/.png/.webp), e.g. small-chops-pack-2000.jpg or tray-15000.jpg.
- * It is picked up automatically. Products without a photo show a
- * branded price tile instead.
+ * Photos: /public/images/products/packs/pack-<price>.jpg and
+ * /public/images/products/trays/tray-<price>.jpg (.jpeg/.png/.webp also work),
+ * e.g. packs/pack-2000.jpg or trays/tray-15000.jpg. They are picked up
+ * automatically. Products without a photo show a branded price tile instead.
  */
+
+/** Photo at /public/images/products/<base>.<ext> (e.g. "packs/pack-2000"), when one exists. */
+function findImage(base: string, price: number, label: string): ProductImage | undefined {
+  const file = productImages.find((f) => f.replace(/\.[^.]+$/, "").toLowerCase() === base);
+  if (!file) return undefined;
+  const src = `/images/products/${file.split("/").map(encodeURIComponent).join("/")}`;
+  return { src, alt: `${label} — ₦${price.toLocaleString("en-US")}` };
+}
 
 const PACK = { one: "pack", many: "packs" };
 const TRAY = { one: "tray", many: "trays" };
@@ -34,6 +42,7 @@ function pack(price: number, contents: string[]): Product {
     minQuantity: 10,
     unit: PACK,
     badge: "Min. 10 packs",
+    image: findImage(`packs/pack-${price}`, price, "Small Chops Pack"),
   };
 }
 
@@ -48,10 +57,11 @@ function tray(price: number, contents: string[]): Product {
     category: "trays",
     available: true,
     unit: TRAY,
+    image: findImage(`trays/tray-${price}`, price, "For the Tray package"),
   };
 }
 
-const catalog: Product[] = [
+export const products: Product[] = [
   /* ---------- SMALL CHOPS PACKS (MINIMUM OF 10 PACKS) ---------- */
   pack(2000, ["Spring Roll", "Samosa", "Corndog", "Puff Puff"]),
   pack(2500, ["Spring Roll", "Samosa", "Chicken BBQ", "Mosa", "Puff Puff"]),
@@ -100,14 +110,6 @@ const catalog: Product[] = [
     "30pcs Puff Puff",
   ]),
 ];
-
-/** Attach a photo from /public/images/products/<id>.<ext> when one exists. */
-function findImage(product: Product): ProductImage | undefined {
-  const file = productImages.find((f) => f.replace(/\.[^.]+$/, "").toLowerCase() === product.id);
-  return file ? { src: `/images/products/${encodeURIComponent(file)}`, alt: product.name } : undefined;
-}
-
-export const products: Product[] = catalog.map((p) => ({ ...p, image: p.image ?? findImage(p) }));
 
 const byId = new Map(products.map((p) => [p.id, p]));
 
