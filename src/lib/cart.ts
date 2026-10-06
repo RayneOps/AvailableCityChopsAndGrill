@@ -1,5 +1,6 @@
 import { getProduct, minQuantityOf } from "../data/products";
 import type { CartLine, Selections } from "../types";
+import { checkoutStore } from "./checkout";
 import { lineKey } from "./pricing";
 import { createPersistedStore, useStore } from "./store";
 
@@ -14,7 +15,7 @@ const newLineId = () => `l${Date.now().toString(36)}${(counter++).toString(36)}`
 
 /**
  * Add an item. `min` is the product's minimum order quantity: a new line is
- * raised to at least `min` (e.g. Small Chops Packs start at 10).
+ * raised to at least `min` (e.g. 10 for Small Chops Packs in an event order).
  */
 export function addLine(
   lines: CartLine[],
@@ -89,13 +90,14 @@ export const cartStore = createPersistedStore<CartLine[]>("acg-cart-v1", [], rev
 
 export const useCart = () => useStore(cartStore);
 
-const minFor = (productId: string) => minQuantityOf(getProduct(productId));
+/** Packs need their event minimum while the customer is ordering for an event. */
+const minFor = (productId: string) => minQuantityOf(getProduct(productId), checkoutStore.get().event.enabled);
 const minForLine = (lines: CartLine[], lineId: string) => {
   const line = lines.find((l) => l.lineId === lineId);
   return line ? minFor(line.productId) : 1;
 };
 
-/** Cart actions — minimum quantities come from the catalog. */
+/** Cart actions — minimum quantities come from the catalog (and event mode). */
 export const cart = {
   add: (item: Parameters<typeof addLine>[1]) => cartStore.set((l) => addLine(l, item, minFor(item.productId))),
   setQuantity: (lineId: string, qty: number) =>

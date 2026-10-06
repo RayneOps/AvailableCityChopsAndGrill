@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { site } from "../config/site";
 import { categories } from "./categories";
-import { products } from "./products";
+import { isEventEligible, minQuantityOf, products } from "./products";
 
 /** Guards the live menu against drifting from the business flyers. */
 describe("real menu matches the flyers", () => {
@@ -14,9 +14,10 @@ describe("real menu matches the flyers", () => {
     expect(products).toHaveLength(13);
   });
 
-  it("Small Chops Packs: 7 packs, correct prices and contents, no minimum, event-eligible", () => {
+  it("Small Chops Packs: 7 packs, correct prices and contents, from 1 (10 for events), event-eligible", () => {
     expect(packs.map((p) => p.price)).toEqual([2000, 2500, 3000, 3200, 3500, 4000, 4700]);
-    expect(packs.every((p) => (p.minQuantity ?? 1) === 1 && p.supportsEventOrder === true)).toBe(true);
+    expect(packs.every((p) => (p.minQuantity ?? 1) === 1 && p.eventEligible === true && isEventEligible(p))).toBe(true);
+    expect(packs.every((p) => minQuantityOf(p) === 1 && minQuantityOf(p, true) === 10)).toBe(true);
     const contents = Object.fromEntries(packs.map((p) => [p.price, p.contents]));
     expect(contents[2000]).toEqual(["Spring Roll", "Samosa", "Corndog", "Puff Puff"]);
     expect(contents[3200]).toEqual(["Spring Roll", "Samosa", "Gizzard", "Chicken BBQ", "Mosa", "Puff Puff", "Corndog"]);
@@ -25,12 +26,19 @@ describe("real menu matches the flyers", () => {
 
   it("For the Tray: 6 packages, correct prices, not event-eligible, no minimum", () => {
     expect(trays.map((p) => p.price)).toEqual([15000, 27000, 32000, 35000, 42000, 50000]);
-    expect(trays.every((p) => !p.supportsEventOrder && (p.minQuantity ?? 1) === 1)).toBe(true);
+    expect(trays.every((p) => p.eventEligible === false && !isEventEligible(p))).toBe(true);
+    expect(trays.every((p) => minQuantityOf(p) === 1 && minQuantityOf(p, true) === 1)).toBe(true);
     const t15 = trays.find((p) => p.price === 15000)!;
     expect(t15.contents).toEqual(["5pcs Vegetable Spring Roll", "5pcs Beef Samosa", "5pcs Chicken BBQ", "1pcs Mosa", "20pcs Puff Puff"]);
     const t50 = trays.find((p) => p.price === 50000)!;
     expect(t50.contents).toHaveLength(8);
     expect(t50.contents).toContain("10pcs Breaded Prawn");
+  });
+
+  it("only the 7 Small Chops Packs are event-eligible", () => {
+    expect(products.filter(isEventEligible).map((p) => p.id)).toEqual(packs.map((p) => p.id));
+    // A non-Pack product can't become event-eligible, even if flagged by mistake.
+    expect(isEventEligible({ ...trays[0]!, eventEligible: true })).toBe(false);
   });
 
   it("every product is available and has no invented options", () => {

@@ -26,6 +26,7 @@ export function Footer() {
         <nav className="footer__col" aria-label="Footer">
           <p className="footer__h">Order</p>
           <a href="#menu">Menu</a>
+          <a href="#events">Events</a>
           <a href="#favorites">Favorites</a>
           <Link href={paths.order()}>Your order</Link>
           <a href="#how">How it works</a>

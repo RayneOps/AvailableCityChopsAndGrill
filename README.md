@@ -49,10 +49,15 @@ The menu comes from the two business flyers. Don't add items, prices or options 
 
 ## Business rules built in
 
-- **Small Chops Packs:** no minimum. Quantity starts at 1 pack.
-  The cart and WhatsApp message show e.g. "₦2,000/pack × 3 packs".
-  (A per-product minimum can still be set with `minQuantity` in `src/data/products.ts`.)
-- **Event orders:** only Packs show "Ordering for an event?". Event details apply to the whole
+- **Small Chops Packs:** regular orders start at 1 pack. Event orders need at least 10 of
+  each pack (`eventMinQuantity`), so quantity starts at 10 and can't go below it.
+  The cart and WhatsApp message show e.g. "₦2,000/pack × 10 packs".
+- **Events section** (`src/components/Events.tsx`): lists every event-eligible product. "Order for
+  Event" switches the order to an event order and opens the pack.
+- **Event orders:** Small Chops Packs only. Each product sets `eventEligible` explicitly, and
+  `isEventEligible()` also requires the Packs category, so nothing else can become an event item.
+  For the Tray never shows event options; a tray in an event order is flagged in the cart.
+  Only Packs show "Ordering for an event?". Event details apply to the whole
   order. The order date/time is the event date/time, and the delivery address is the venue.
 - **For the Tray:** normal ordering. The flyer notes (packaging ₦200 – ₦1,500, bulk discount)
   are shown on the menu and added to the WhatsApp message as "to be confirmed". Nothing is

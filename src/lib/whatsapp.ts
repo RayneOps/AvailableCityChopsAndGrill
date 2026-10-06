@@ -103,6 +103,9 @@ export function buildOrderMessage(order: Order, businessName: string = site.name
     "SUMMARY",
     `Subtotal: ${formatNaira(order.subtotal)}`,
     `Delivery: ${deliveryLabel(order)}`,
+    // Event orders: nothing is added automatically — the business confirms these.
+    order.event && "Packaging: To be confirmed",
+    order.event && "Bulk discount: To be confirmed",
     `*Total: ${totalLabel(order.subtotal, order.deliveryFee)}*`,
     ...(order.confirmNotes ?? []).map((n) => `Note: ${n}`),
   );

@@ -8,7 +8,7 @@ export const categories: Category[] = [
   {
     id: "packs",
     name: "Small Chops Packs",
-    flyer: "small-chops-packs",
+    flyer: "pack-flyer",
   },
   {
     id: "trays",
@@ -17,7 +17,7 @@ export const categories: Category[] = [
       "Packaging cost varies from ₦200 - ₦1,500 depending on the content of your box.",
       "Discount applies for all bulk orders.",
     ],
-    flyer: "for-the-tray",
+    flyer: "tray-flyer",
     orderNote:
       "Packaging cost (₦200 - ₦1,500 depending on the content of the box) and any bulk discount to be confirmed.",
   },

@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { getCategory } from "../data/categories";
-import { getProduct, minQuantityOf } from "../data/products";
+import { usePricedCart } from "../hooks/useOrder";
+import { EVENT_MIN_PACKS, getProduct, isEventEligible, minQuantityOf } from "../data/products";
 import { cart, useCart } from "../lib/cart";
 import { updateEvent, useCheckout } from "../lib/checkout";
 import { formatDelta, formatNaira, formatQuantity } from "../lib/format";
@@ -59,17 +60,26 @@ function ProductForm({ product, editing }: { product: Product; editing?: ReturnT
   const [selections, setSelections] = useState<Selections>(() =>
     editing ? normalizeSelections(product, { ...defaultSelections(product), ...editing.selections }) : defaultSelections(product),
   );
-  const min = minQuantityOf(product);
+  const details = useCheckout();
+  const priced = usePricedCart();
+  const eventCapable = isEventEligible(product);
+  const eventOn = eventCapable && details.event.enabled;
+  const min = minQuantityOf(product, eventOn);
   const [quantity, setQuantity] = useState(Math.max(min, editing?.quantity ?? min));
   const [notes, setNotes] = useState(editing?.notes ?? "");
   const [showErrors, setShowErrors] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const details = useCheckout();
   const formRef = useRef<HTMLFormElement>(null);
 
   const errors = useMemo(() => validateSelections(product, selections), [product, selections]);
   const price = unitPrice(product, selections);
-  const total = price * quantity;
+  const qty = Math.max(min, quantity);
+  const total = price * qty;
+
+  function setEvent(enabled: boolean) {
+    updateEvent({ enabled });
+    if (enabled) setQuantity((q) => Math.max(q, minQuantityOf(product, true)));
+  }
 
   function toggle(option: ProductOption, choiceId: string, checked: boolean) {
     setSelections((prev) => {
@@ -91,11 +101,11 @@ function ProductForm({ product, editing }: { product: Product; editing?: ReturnT
     }
     setSubmitting(true);
     if (editing) {
-      cart.update(editing.lineId, { selections, quantity, notes });
+      cart.update(editing.lineId, { selections, quantity: qty, notes });
       showToast(`Updated ${product.name}`);
     } else {
-      cart.add({ productId: product.id, selections, quantity, notes });
-      showToast(`Added ${formatQuantity(quantity, product.unit)} of ${product.name}`);
+      cart.add({ productId: product.id, selections, quantity: qty, notes });
+      showToast(`Added ${formatQuantity(qty, product.unit)} of ${product.name}${eventOn ? " to your event order" : ""}`);
     }
     dismissProductSheet(editing?.lineId);
   }
@@ -140,7 +150,14 @@ function ProductForm({ product, editing }: { product: Product; editing?: ReturnT
         {min > 1 && (
           <p className="notice notice--info">
             <IconAlert size={18} />
-            Minimum order: {formatQuantity(min, product.unit)}.
+            {eventOn ? "Event order — minimum" : "Minimum order"}: {formatQuantity(min, product.unit)}.
+          </p>
+        )}
+        {!eventCapable && priced.isEvent && (
+          <p className="notice notice--info">
+            <IconParty size={18} />
+            Your order is an event order, and event orders are Small Chops Packs only. {category?.name ?? "This item"} is a
+            regular menu order — turn off event ordering in your order to add it.
           </p>
         )}
         {category?.notes && min === 1 && (
@@ -229,24 +246,25 @@ function ProductForm({ product, editing }: { product: Product; editing?: ReturnT
           </div>
         )}
 
-        {product.supportsEventOrder && (
-          <div className={`event-box ${details.event.enabled ? "event-box--on" : ""}`}>
+        {eventCapable && (
+          <div className={`event-box ${eventOn ? "event-box--on" : ""}`}>
             <label className="switch">
-              <input
-                type="checkbox"
-                checked={details.event.enabled}
-                onChange={(e) => updateEvent({ enabled: e.target.checked })}
-              />
+              <input type="checkbox" checked={eventOn} onChange={(e) => setEvent(e.target.checked)} />
               <span className="switch__track" aria-hidden="true" />
               <span className="switch__text">
                 <span className="switch__title">
                   <IconParty size={18} /> Ordering for an event?
                 </span>
-                <span className="switch__sub">Add your event details — they apply to the whole order</span>
+                <span className="switch__sub">
+                  Event orders: minimum {EVENT_MIN_PACKS} packs · details apply to the whole order
+                </span>
               </span>
             </label>
-            {details.event.enabled && (
+            {eventOn && (
               <div className="event-box__fields">
+                <p className="event-calc">
+                  {formatNaira(price)} × {formatQuantity(qty, product.unit)} = <strong>{formatNaira(total)}</strong>
+                </p>
                 <EventFields variant="compact" idPrefix="pevent" />
               </div>
             )}
@@ -258,7 +276,7 @@ function ProductForm({ product, editing }: { product: Product; editing?: ReturnT
         {product.available ? (
           <>
             <QuantityStepper
-              value={quantity}
+              value={qty}
               min={min}
               label={product.name}
               onChange={(q) => setQuantity(Math.max(min, q))}

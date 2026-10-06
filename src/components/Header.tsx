@@ -5,7 +5,7 @@ import { paths } from "../lib/router";
 import { buildWhatsAppUrl } from "../lib/whatsapp";
 import { Brand } from "./Brand";
 import { hasGallery } from "./Gallery";
-import { IconBag, IconWhatsApp } from "./Icons";
+import { IconBag, IconParty, IconWhatsApp } from "./Icons";
 import { Link } from "./Link";
 
 export function Header() {
@@ -41,6 +41,7 @@ export function Header() {
 
         <nav className="header__nav" aria-label="Main">
           <a href="#menu">Menu</a>
+          <a href="#events">Events</a>
           <a href="#favorites">Favorites</a>
           <a href="#how">How it works</a>
           {hasGallery && <a href="#gallery">Gallery</a>}
@@ -48,6 +49,11 @@ export function Header() {
         </nav>
 
         <div className="header__actions">
+          {/* Phones and tablets have no nav bar, so Events gets its own shortcut. */}
+          <a href="#events" className="header__events">
+            <IconParty size={18} />
+            <span>Events</span>
+          </a>
           <a
             href={buildWhatsAppUrl(site.whatsappOrderNumber)}
             target="_blank"

@@ -1,4 +1,4 @@
-import { getProduct as defaultGetProduct } from "../data/products";
+import { getProduct as defaultGetProduct, isEventEligible, minQuantityOf } from "../data/products";
 import { formatQuantity } from "./format";
 import type { CartLine, OrderItemOption, Product, ProductOption, Selections, Unit } from "../types";
 
@@ -101,7 +101,8 @@ export function lineKey(productId: string, selections: Selections, notes = ""): 
 
 /* ------------------------------------------------------------------ */
 
-export type LineStatus = "ok" | "missing" | "unavailable" | "invalid" | "belowMin";
+/** "notForEvent": a non-Pack item in an event order (event orders are Small Chops Packs only). */
+export type LineStatus = "ok" | "missing" | "unavailable" | "invalid" | "notForEvent" | "belowMin";
 
 export type PricedLine = {
   line: CartLine;
@@ -127,11 +128,28 @@ export type PricedCart = {
   quantityLabel: string;
   /** True when the order contains items that can be ordered for an event (Packs). */
   hasEventItems: boolean;
+  /** True when this is an event order: event ordering is on and the order has Packs. */
+  isEvent: boolean;
   /** Category ids present in the (orderable) order. */
   categories: string[];
 };
 
-export function priceCart(lines: CartLine[], getProduct: ProductLookup = defaultGetProduct): PricedCart {
+/**
+ * `eventRequested` is the customer's "ordering for an event" choice. It only
+ * takes effect when the order contains Packs; then Packs need their event
+ * minimum and any other item is flagged, since only Packs can be event orders.
+ */
+export function priceCart(
+  lines: CartLine[],
+  getProduct: ProductLookup = defaultGetProduct,
+  eventRequested = false,
+): PricedCart {
+  const hasEventItems = lines.some((l) => {
+    const p = getProduct(l.productId);
+    return isEventEligible(p) && p.available;
+  });
+  const isEvent = eventRequested && hasEventItems;
+
   const priced = lines.map((line): PricedLine => {
     const product = getProduct(line.productId);
     if (!product) {
@@ -149,7 +167,7 @@ export function priceCart(lines: CartLine[], getProduct: ProductLookup = default
     const selections = normalizeSelections(product, line.selections);
     const invalid = Object.keys(validateSelections(product, selections)).length > 0;
     const price = unitPrice(product, selections);
-    const minQuantity = Math.max(1, product.minQuantity ?? 1);
+    const minQuantity = minQuantityOf(product, isEvent);
     return {
       line,
       product,
@@ -157,7 +175,9 @@ export function priceCart(lines: CartLine[], getProduct: ProductLookup = default
         ? "unavailable"
         : invalid
           ? "invalid"
-          : line.quantity < minQuantity
+          : isEvent && !isEventEligible(product)
+            ? "notForEvent"
+            : line.quantity < minQuantity
             ? "belowMin"
             : "ok",
       name: product.name,
@@ -180,7 +200,8 @@ export function priceCart(lines: CartLine[], getProduct: ProductLookup = default
     itemCount,
     hasProblems: priced.some((p) => p.status !== "ok"),
     quantityLabel: formatQuantity(itemCount, sharedUnit),
-    hasEventItems: ok.some((p) => p.product?.supportsEventOrder),
+    hasEventItems,
+    isEvent,
     categories: [...new Set(ok.map((p) => p.product!.category))],
   };
 }

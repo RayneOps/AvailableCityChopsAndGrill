@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { usePricedCart } from "../../hooks/useOrder";
 import { cart } from "../../lib/cart";
-import { draftRefStore } from "../../lib/checkout";
-import { formatNaira, formatQuantity } from "../../lib/format";
+import { EVENT_MIN_PACKS } from "../../data/products";
+import { draftRefStore, updateEvent, useCheckout } from "../../lib/checkout";
+import { formatDate, formatNaira, formatQuantity, formatTime } from "../../lib/format";
 import type { PricedLine } from "../../lib/pricing";
 import { closeOverlays, navigate, paths } from "../../lib/router";
 import { showToast } from "../../lib/toast";
-import { IconAlert, IconEdit, IconTrash } from "../Icons";
+import { IconAlert, IconEdit, IconParty, IconTrash } from "../Icons";
 import { Link } from "../Link";
 import { QuantityStepper } from "../QuantityStepper";
 import { EmptyOrder, OrderTotals } from "./shared";
@@ -27,6 +28,7 @@ export function CartStep() {
     if (!confirmClear) return setConfirmClear(true);
     cart.clear();
     draftRefStore.set("");
+    updateEvent({ enabled: false });
     showToast("Order cleared");
   }
 
@@ -40,9 +42,11 @@ export function CartStep() {
           </p>
         )}
 
+        {priced.isEvent && <EventBanner />}
+
         <ul className="citems" aria-label="Items in your order">
           {priced.lines.map((pl) => (
-            <CartItem key={pl.line.lineId} priced={pl} />
+            <CartItem key={pl.line.lineId} priced={pl} isEvent={priced.isEvent} />
           ))}
         </ul>
 
@@ -73,7 +77,40 @@ export function CartStep() {
   );
 }
 
-function CartItem({ priced }: { priced: PricedLine }) {
+/** Makes an event order obvious before checkout. */
+function EventBanner() {
+  const d = useCheckout();
+  const notSet = <span className="event-banner__todo">Added at checkout</span>;
+  const venue =
+    d.fulfillment === "pickup" ? "Pickup" : d.fulfillment === "delivery" && d.address.trim() ? d.address : null;
+  return (
+    <section className="event-banner" aria-label="Event order">
+      <p className="event-banner__tag">
+        <IconParty size={16} /> Event order
+      </p>
+      <p className="event-banner__rule">Small Chops Packs only · minimum {EVENT_MIN_PACKS} packs each</p>
+      <dl className="event-banner__facts">
+        <div>
+          <dt>Event date</dt>
+          <dd>{d.date ? formatDate(d.date) : notSet}</dd>
+        </div>
+        <div>
+          <dt>Event time</dt>
+          <dd>{d.time ? formatTime(d.time) : notSet}</dd>
+        </div>
+        <div>
+          <dt>Venue</dt>
+          <dd>{venue ?? notSet}</dd>
+        </div>
+      </dl>
+      <button type="button" className="link-btn link-btn--sm" onClick={() => updateEvent({ enabled: false })}>
+        Not for an event? Order normally
+      </button>
+    </section>
+  );
+}
+
+function CartItem({ priced, isEvent }: { priced: PricedLine; isEvent: boolean }) {
   const { line, product, status } = priced;
   const editable = product && status !== "missing" && ((product.options?.length ?? 0) > 0 || product.allowNotes !== false);
   const problem =
@@ -83,9 +120,11 @@ function CartItem({ priced }: { priced: PricedLine }) {
         ? "Sorry, this item is currently unavailable. Please remove it."
         : status === "invalid"
           ? "The options for this item have changed. Please edit it."
-          : status === "belowMin"
-            ? `Minimum order is ${formatQuantity(priced.minQuantity, priced.unit)}. Please increase the quantity.`
-            : null;
+          : status === "notForEvent"
+            ? "Event orders are Small Chops Packs only. Remove this item, or order normally (not for an event)."
+            : status === "belowMin"
+              ? `${isEvent ? "Event orders need at least" : "Minimum order is"} ${formatQuantity(priced.minQuantity, priced.unit)}. Please increase the quantity.`
+              : null;
 
   return (
     <li className={`citem ${problem ? "citem--problem" : ""}`}>

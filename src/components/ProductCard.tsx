@@ -1,5 +1,6 @@
 import { minQuantityOf } from "../data/products";
 import { cart } from "../lib/cart";
+import { useCheckout } from "../lib/checkout";
 import { formatNaira, formatQuantity } from "../lib/format";
 import { paths } from "../lib/router";
 import { showToast } from "../lib/toast";
@@ -22,7 +23,7 @@ const PREVIEW = 3;
 
 export function ProductCard({ product, lines, index = 0 }: Props) {
   const simple = !product.options || product.options.length === 0;
-  const min = minQuantityOf(product);
+  const min = minQuantityOf(product, useCheckout().event.enabled);
   const inCart = lines.reduce((n, l) => n + l.quantity, 0);
   // The "plain" line (no note) is what the card's stepper controls for simple products.
   const plainLine = simple ? lines.find((l) => !l.notes) : undefined;

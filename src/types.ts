@@ -66,8 +66,13 @@ export type Product = {
   image?: ProductImage;
   available: boolean;
   options?: ProductOption[];
-  /** Shows the "Ordering for an event?" path on this product. */
-  supportsEventOrder?: boolean;
+  /**
+   * Can this product be ordered for an event? Must be stated explicitly on every
+   * product. Only Small Chops Packs may be event-eligible (see isEventEligible).
+   */
+  eventEligible: boolean;
+  /** Minimum quantity when the order is an event order (Small Chops Packs: 10). */
+  eventMinQuantity?: number;
   /** Allow a free-text note on this item (defaults to true). */
   allowNotes?: boolean;
   /** Small label on the card, e.g. "Min. 10 packs". Keep factual. */

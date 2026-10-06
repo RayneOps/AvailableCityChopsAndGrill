@@ -5,13 +5,14 @@ import { emptyDetails } from "./checkout";
 import { toggleFavorite } from "./favorites";
 import { formatDate, formatNaira, formatQuantity, formatTime } from "./format";
 import { canRotate, changeTimeMs, pickNextImage, ROTATE_MS, stepMs, tileForTick } from "./galleryRotation";
+import { minQuantityOf } from "../data/products";
 import { buildOrder, effectiveDetails, generateOrderRef } from "./order";
 import { defaultSelections, normalizeSelections, priceCart, validateSelections } from "./pricing";
 import { cleanLine, cleanMultiline } from "./sanitize";
 import { normalizePhone, validateCheckout } from "./validation";
 import { buildOrderMessage, buildWhatsAppUrl, isWhatsAppConfigured, normalizeWhatsAppNumber } from "./whatsapp";
 
-/* Fixture catalog shaped like the real menu (packs with a minimum, trays),
+/* Fixture catalog shaped like the real menu (packs: 10 minimum for events, trays),
    plus one item with options to keep the option engine covered. */
 const PACK = { one: "pack", many: "packs" };
 const TRAY = { one: "tray", many: "trays" };
@@ -24,8 +25,8 @@ const catalog: Product[] = [
     price: 2000,
     category: "packs",
     available: true,
-    supportsEventOrder: true,
-    minQuantity: 10,
+    eventEligible: true,
+    eventMinQuantity: 10,
     unit: PACK,
   },
   {
@@ -35,8 +36,8 @@ const catalog: Product[] = [
     price: 4700,
     category: "packs",
     available: true,
-    supportsEventOrder: true,
-    minQuantity: 10,
+    eventEligible: true,
+    eventMinQuantity: 10,
     unit: PACK,
   },
   {
@@ -47,6 +48,7 @@ const catalog: Product[] = [
     price: 15000,
     category: "trays",
     available: true,
+    eventEligible: false,
     unit: TRAY,
   },
   {
@@ -56,6 +58,7 @@ const catalog: Product[] = [
     price: 10000,
     category: "trays",
     available: true,
+    eventEligible: false,
     options: [
       {
         id: "size",
@@ -82,11 +85,11 @@ const catalog: Product[] = [
       },
     ],
   },
-  { id: "gone", name: "Retired Item", description: "", price: 1000, category: "trays", available: false },
+  { id: "gone", name: "Retired Item", description: "", price: 1000, category: "trays", available: false, eventEligible: false },
 ];
 const lookup = (id: string) => catalog.find((p) => p.id === id);
 const configurable = lookup("configurable")!;
-const minOf = (id: string) => lookup(id)?.minQuantity ?? 1;
+const minOf = (id: string, event = false) => minQuantityOf(lookup(id), event);
 
 const NOW = new Date(2026, 8, 26, 12, 0); // 26 Sep 2026, 12:00 local
 
@@ -103,9 +106,9 @@ const deliveryDetails: CheckoutDetails = {
   notes: "Please pack them separately.",
 };
 
-/** Add like the real cart does: minimums come from the catalog. */
-function add(lines: CartLine[], productId: string, quantity = 1, selections = {}, notes?: string) {
-  return addLine(lines, { productId, quantity, selections, notes }, minOf(productId));
+/** Add like the real cart does: minimums come from the catalog (and event mode). */
+function add(lines: CartLine[], productId: string, quantity = 1, selections = {}, notes?: string, event = false) {
+  return addLine(lines, { productId, quantity, selections, notes }, minOf(productId, event));
 }
 
 describe("formatting", () => {
@@ -126,16 +129,22 @@ describe("formatting", () => {
   });
 });
 
-describe("Small Chops Packs — minimum of 10", () => {
-  it("adding a pack starts at 10 packs", () => {
+describe("Small Chops Packs — from 1, minimum 10 for events", () => {
+  it("a regular pack order starts at 1 pack", () => {
     const lines = add([], "pack-2000", 1);
+    expect(lines[0]!.quantity).toBe(1);
+    expect(priceCart(lines, lookup).subtotal).toBe(2000);
+  });
+  it("an event pack order starts at 10 packs: ₦2,000 × 10 = ₦20,000", () => {
+    const lines = add([], "pack-2000", 1, {}, undefined, true);
     expect(lines[0]!.quantity).toBe(10);
-    const cart = priceCart(lines, lookup);
-    expect(cart.subtotal).toBe(20000); // ₦2,000 × 10
+    const cart = priceCart(lines, lookup, true);
+    expect(cart.isEvent).toBe(true);
+    expect(cart.subtotal).toBe(20000);
     expect(cart.quantityLabel).toBe("10 packs");
   });
   it("₦4,700 × 10 = ₦47,000", () => {
-    expect(priceCart(add([], "pack-4700", 10), lookup).subtotal).toBe(47000);
+    expect(priceCart(add([], "pack-4700", 10), lookup, true).subtotal).toBe(47000);
   });
   it("can go above 10 but not below — going below removes the line", () => {
     let lines = add([], "pack-2000", 10);
@@ -151,12 +160,30 @@ describe("Small Chops Packs — minimum of 10", () => {
     const edited = updateLine(lines, lines[0]!.lineId, { selections: {}, quantity: 3 }, 10);
     expect(edited[0]!.quantity).toBe(10);
   });
-  it("stale stored quantities below the minimum are flagged, not priced", () => {
-    const stale: CartLine[] = [{ lineId: "x", productId: "pack-2000", quantity: 2, selections: {} }];
-    const cart = priceCart(stale, lookup);
+  it("switching to an event order flags packs below 10 instead of pricing them", () => {
+    const few: CartLine[] = [{ lineId: "x", productId: "pack-2000", quantity: 2, selections: {} }];
+    expect(priceCart(few, lookup).lines[0]!.status).toBe("ok");
+    const cart = priceCart(few, lookup, true);
     expect(cart.lines[0]!.status).toBe("belowMin");
+    expect(cart.lines[0]!.minQuantity).toBe(10);
     expect(cart.hasProblems).toBe(true);
     expect(cart.subtotal).toBe(0);
+  });
+});
+
+describe("event orders accept Small Chops Packs only", () => {
+  it("trays in an event order are flagged, not priced", () => {
+    const cart = priceCart(add(add([], "pack-2000", 10), "tray-15000"), lookup, true);
+    expect(cart.isEvent).toBe(true);
+    expect(cart.lines.map((l) => l.status)).toEqual(["ok", "notForEvent"]);
+    expect(cart.hasProblems).toBe(true);
+    expect(cart.subtotal).toBe(20000);
+  });
+  it("event mode has no effect on an order without packs", () => {
+    const cart = priceCart(add([], "tray-15000", 2), lookup, true);
+    expect(cart.isEvent).toBe(false);
+    expect(cart.hasProblems).toBe(false);
+    expect(cart.subtotal).toBe(30000);
   });
 });
 
@@ -171,7 +198,7 @@ describe("Trays", () => {
     expect(cart.hasEventItems).toBe(false);
   });
   it("mixed orders count items", () => {
-    const cart = priceCart(add(add([], "tray-15000"), "pack-2000"), lookup);
+    const cart = priceCart(add(add([], "tray-15000"), "pack-2000", 10), lookup);
     expect(cart.quantityLabel).toBe("11 items");
     expect(cart.subtotal).toBe(35000);
     expect(cart.hasEventItems).toBe(true);
@@ -254,13 +281,16 @@ describe("event orders — Packs only", () => {
     expect(buildOrderMessage(order, "Test Kitchen")).not.toContain("EVENT");
   });
   it("event details apply to orders with packs", () => {
-    const packs = priceCart(add([], "pack-2000"), lookup);
+    const packs = priceCart(add([], "pack-2000", 10), lookup, true);
     const msg = buildOrderMessage(buildOrder(packs, eventDetails, "ACG-TEST"), "Test Kitchen");
     expect(msg).toContain("*EVENT ORDER*");
     expect(msg).toContain("*ORDER TYPE*\nEvent order · Delivery");
     expect(msg).toContain("*EVENT DETAILS*\nType: Wedding\nEvent: Ada & Tunde\nGuests: 120\nRequirements: Serve by 5pm");
     expect(msg).toContain("*EVENT DATE & TIME*\nSun, 27 Sep 2026, 6:00 PM");
     expect(msg).toContain("*EVENT VENUE / DELIVERY ADDRESS*");
+    expect(msg).toContain(
+      "Subtotal: ₦20,000\nDelivery: To be confirmed\nPackaging: To be confirmed\nBulk discount: To be confirmed\n*Total: ₦20,000 + delivery*",
+    );
   });
 });
 

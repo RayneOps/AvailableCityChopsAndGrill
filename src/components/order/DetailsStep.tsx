@@ -1,16 +1,49 @@
 import { useRef, useState } from "react";
 import { site } from "../../config/site";
 import { useCheckoutValidation, usePricedCart } from "../../hooks/useOrder";
+import { EVENT_MIN_PACKS } from "../../data/products";
+import { cart } from "../../lib/cart";
 import { draftRefStore, updateDetails, updateEvent } from "../../lib/checkout";
 import { toISODate } from "../../lib/format";
 import { generateOrderRef } from "../../lib/order";
 import { navigate, paths } from "../../lib/router";
+import { Link } from "../Link";
 import { FIELD_ORDER, type CheckoutField } from "../../lib/validation";
 import type { FulfillmentType } from "../../types";
 import { EventFields } from "../EventFields";
 import { Field } from "../Field";
 import { IconAlert, IconParty, IconPin, IconStore, IconTruck } from "../Icons";
 import { EmptyOrder, OrderTotals, PaymentNote } from "./shared";
+
+/** Shown when switching to an event order leaves items that don't qualify (too few packs, or trays). */
+function EventFixNotice() {
+  const priced = usePricedCart();
+  const short = priced.lines.filter((l) => l.status === "belowMin");
+  const others = priced.lines.some((l) => l.status === "notForEvent");
+  return (
+    <div className="notice notice--warn event-fix" role="alert">
+      <IconAlert size={18} />
+      <div>
+        {short.length > 0 && <p>Event orders need at least {EVENT_MIN_PACKS} of each pack.</p>}
+        {others && <p>Event orders are Small Chops Packs only — other items must be ordered separately.</p>}
+        <p className="event-fix__actions">
+          {short.length > 0 && (
+            <button
+              type="button"
+              className="link-btn link-btn--sm"
+              onClick={() => short.forEach((l) => cart.setQuantity(l.line.lineId, l.minQuantity))}
+            >
+              Set packs to {EVENT_MIN_PACKS}
+            </button>
+          )}
+          <Link href={paths.order()} className="link-btn link-btn--sm">
+            Review your order
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
 
 /** DOM id to focus for each validated field. */
 const FIELD_IDS: Record<CheckoutField, string> = {
@@ -31,7 +64,7 @@ export function DetailsStep() {
   const [touched, setTouched] = useState<Partial<Record<CheckoutField, boolean>>>({});
   const summaryRef = useRef<HTMLParagraphElement>(null);
 
-  if (priced.itemCount === 0) return <EmptyOrder />;
+  if (priced.lines.length === 0) return <EmptyOrder />;
 
   const shown = (f: CheckoutField) => (submitted || touched[f] ? errors[f] : undefined);
   const touch = (f: CheckoutField) => () => setTouched((t) => ({ ...t, [f]: true }));
@@ -257,9 +290,12 @@ export function DetailsStep() {
               <span className="switch__title">
                 <IconParty size={18} /> Ordering for an event?
               </span>
-              <span className="switch__sub">For your Small Chops Packs — applies to the whole order</span>
+              <span className="switch__sub">
+                Small Chops Packs only · minimum {EVENT_MIN_PACKS} packs each · applies to the whole order
+              </span>
             </span>
           </label>
+          {isEvent && priced.hasProblems && <EventFixNotice />}
           {isEvent && (
             <div className="event-box__fields">
               <EventFields variant="full" idPrefix="cevent" errors={{ eventGuests: shown("eventGuests") }} />

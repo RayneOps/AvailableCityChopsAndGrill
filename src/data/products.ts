@@ -9,8 +9,9 @@ import type { Product, ProductImage } from "../types";
  * and "Small Chops Menu — FOR THE TRAY — Price List Package".
  * Do not add items, prices or contents that are not on the flyers.
  *
- * Prices are whole naira. Packs can be ordered from 1 pack (the business
- * dropped the flyer's 10-pack minimum).
+ * Prices are whole naira. Packs can be ordered from 1 pack; an EVENT order
+ * needs at least 10 of each pack. Only Small Chops Packs can be ordered
+ * for events — For the Tray packages are always regular orders.
  *
  * Photos: /public/images/products/packs/pack-<price>.jpg and
  * /public/images/products/trays/tray-<price>.jpg (.jpeg/.png/.webp also work),
@@ -33,6 +34,11 @@ function findImage(folder: string, name: string, price: number, label: string): 
   return { src, alt: `${label} — ₦${price.toLocaleString("en-US")}` };
 }
 
+/** The only category that can be ordered for events. */
+export const EVENT_CATEGORY = "packs";
+/** Minimum number of each pack in an event order. */
+export const EVENT_MIN_PACKS = 10;
+
 const PACK = { one: "pack", many: "packs" };
 const TRAY = { one: "tray", many: "trays" };
 
@@ -46,7 +52,8 @@ function pack(price: number, contents: string[]): Product {
     price,
     category: "packs",
     available: true,
-    supportsEventOrder: true,
+    eventEligible: true,
+    eventMinQuantity: EVENT_MIN_PACKS,
     unit: PACK,
     image: findImage("packs", "pack", price, "Small Chops Pack"),
   };
@@ -62,6 +69,7 @@ function tray(price: number, contents: string[]): Product {
     price,
     category: "trays",
     available: true,
+    eventEligible: false,
     unit: TRAY,
     image: findImage("trays", "tray", price, "For the Tray package"),
   };
@@ -123,5 +131,15 @@ export function getProduct(id: string): Product | undefined {
   return byId.get(id);
 }
 
-/** Smallest quantity a customer may order (1 unless the flyer states a minimum). */
-export const minQuantityOf = (p: Product | undefined) => Math.max(1, p?.minQuantity ?? 1);
+/**
+ * Event orders are Small Chops Packs only. Both checks must pass, so a product
+ * in another category can never become event-eligible by accident.
+ */
+export const isEventEligible = (p: Product | undefined): p is Product =>
+  !!p && p.eventEligible === true && p.category === EVENT_CATEGORY;
+
+/** Smallest quantity a customer may order — higher for packs in an event order. */
+export function minQuantityOf(p: Product | undefined, event = false): number {
+  const base = Math.max(1, p?.minQuantity ?? 1);
+  return event && isEventEligible(p) ? Math.max(base, p.eventMinQuantity ?? base) : base;
+}

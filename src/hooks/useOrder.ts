@@ -5,9 +5,11 @@ import { priceCart } from "../lib/pricing";
 import { effectiveDetails } from "../lib/order";
 import { validateCheckout } from "../lib/validation";
 
+/** The priced cart. Event minimums apply while the customer is ordering for an event. */
 export function usePricedCart() {
   const lines = useCart();
-  return useMemo(() => priceCart(lines), [lines]);
+  const event = useCheckout().event.enabled;
+  return useMemo(() => priceCart(lines, undefined, event), [lines, event]);
 }
 
 /** Checkout details + validation. Event details only count when the order contains Packs. */

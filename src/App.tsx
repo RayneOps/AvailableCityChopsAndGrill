@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { CartBar } from "./components/CartBar";
 import { Contact } from "./components/Contact";
+import { Events } from "./components/Events";
 import { Favorites } from "./components/Favorites";
 import { Footer } from "./components/Footer";
 import { Gallery } from "./components/Gallery";
@@ -34,8 +35,9 @@ export function App() {
         <Hero />
         <Favorites />
         <Menu />
-        <HowItWorks />
+        <Events />
         <Gallery />
+        <HowItWorks />
         <Contact />
       </main>
       <Footer />

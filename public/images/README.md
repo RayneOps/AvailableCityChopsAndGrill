@@ -14,8 +14,8 @@ public/images/
 │   ├── packs/          the seven Small Chops Pack photos (+ shared pack.jpg)
 │   └── trays/          the six For the Tray photos (+ shared tray.jpg)
 ├── flyers/             the original menu / price-list flyers
-│   ├── small-chops-packs.jpg
-│   └── for-the-tray.jpg
+│   ├── pack-flyer.jpeg
+│   └── tray-flyer.jpeg
 └── gallery/            rotating general food / event / business photos
 ```
 
@@ -71,8 +71,8 @@ Keep the four kinds separate: a product photo goes in `products/`, a flyer in
 ## flyers/: original menu flyers
 
 ```
-flyers/small-chops-packs.jpg   ← "SMALL CHOPS PACKS" price-list flyer
-flyers/for-the-tray.jpg        ← "FOR THE TRAY" price-list flyer
+flyers/pack-flyer.jpeg    ← "SMALL CHOPS PACKS" price-list flyer
+flyers/tray-flyer.jpeg    ← "FOR THE TRAY" price-list flyer
 ```
 
 These are the original price-list artwork, not product photos. When a flyer is

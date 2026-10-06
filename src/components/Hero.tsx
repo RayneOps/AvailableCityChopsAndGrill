@@ -51,6 +51,12 @@ export function Hero() {
                 </a>
               </li>
             ))}
+            <li>
+              <a href="#events" className="hero__fromchip hero__fromchip--event">
+                <span>Events</span>
+                <strong>Small Chops Packs</strong>
+              </a>
+            </li>
           </ul>
           <ul className="hero__promises">
             {PROMISES.map((p) => (

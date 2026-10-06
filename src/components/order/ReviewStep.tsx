@@ -30,7 +30,7 @@ export function ReviewStep() {
   const configured = isWhatsAppConfigured(site.whatsappOrderNumber);
   const url = configured && message ? buildWhatsAppUrl(site.whatsappOrderNumber, message) : null;
 
-  if (priced.itemCount === 0) return <EmptyOrder />;
+  if (priced.lines.length === 0) return <EmptyOrder />;
 
   if (priced.hasProblems || !order) {
     return (
